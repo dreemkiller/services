@@ -17,8 +17,8 @@ import (
 
 // TODO(tho) make these configurable
 var (
-	DefaultPluginDir  = "../plugins/bin/"
-	DefaultListenAddr = "localhost:8888"
+	DefaultPluginDir  = "./plugins/bin/"
+	DefaultListenAddr = "provisioning:8888"
 )
 
 func main() {
