@@ -25,6 +25,7 @@ require (
 	github.com/veraison/psatoken v0.0.2-0.20220729120948-5bec1d03670c
 	google.golang.org/grpc v1.49.0
 	google.golang.org/protobuf v1.28.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -90,5 +91,4 @@ require (
 	google.golang.org/genproto v0.0.0-20220624142145-8cd45d7dbd1f // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

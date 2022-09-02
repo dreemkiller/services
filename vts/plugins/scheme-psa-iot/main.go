@@ -5,11 +5,10 @@ package main
 
 import (
 	"bytes"
-	"crypto/x509"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
-	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -161,7 +160,7 @@ func (s Scheme) ExtractClaims(
 		token.TenantId,
 		MustImplIDString(psaToken.Claims),
 	)
-	log.Printf("\n Extracted SW ID Key = %s", extracted.SoftwareID)
+
 	return &extracted, nil
 }
 
