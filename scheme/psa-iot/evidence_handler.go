@@ -4,11 +4,10 @@ package psa_iot
 
 import (
 	"bytes"
-	"crypto/x509"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
-	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -161,7 +160,6 @@ func (s EvidenceHandler) ExtractClaims(
 		token.TenantId,
 		MustImplIDString(psaToken.Claims),
 	)
-	log.Printf("\n Extracted SW ID Key = %s", extracted.ReferenceID)
 	return &extracted, nil
 }
 
