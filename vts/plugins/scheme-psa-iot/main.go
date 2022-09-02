@@ -5,11 +5,10 @@ package main
 
 import (
 	"bytes"
-	"crypto/x509"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
-	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -137,58 +136,55 @@ func (s Scheme) GetTrustAnchorID(token *proto.AttestationToken) (string, error) 
 }
 
 func (s Scheme) ExtractVerifiedClaims(token *proto.AttestationToken, trustAnchor string) (*scheme.ExtractedClaims, error) {
-	var endorsement TaEndorsements
+	ta_unmarshalled := make(map[string]interface{})
 
-	if err := json.Unmarshal([]byte(trustAnchor), &endorsement); err != nil {
-		log.Println("Could not decode Endorsements in ExtractVerifiedClaims")
-		return nil, fmt.Errorf("could not decode endorsement at %w", err)
-	}
-	ta := *endorsement.Attr.VerifKey
-	block, rest := pem.Decode([]byte(ta))
+        err := json.Unmarshal([]byte(trustAnchor), &ta_unmarshalled)
+        if err != nil {
+                return nil, err
+        }
 
-	if block == nil {
-		log.Println("Could not get TA PEM Block ExtractVerifiedClaims")
-		return nil, errors.New("could not extract trust anchor PEM block")
-	}
+        contents := ta_unmarshalled["attributes"].(map[string]interface{})
 
-	if len(rest) != 0 {
-		return nil, errors.New("trailing data found after PEM block")
-	}
+        bytes, err := base64.StdEncoding.DecodeString(contents["psa.iak-pub"].(string))
+        if err != nil {
+                return nil, fmt.Errorf("Failed to base64 decode string: %s err:%e", contents["psa.iak-pub"].(string), err)
+        }
 
-	if block.Type != "PUBLIC KEY" {
-		return nil, fmt.Errorf("unsupported key type %q", block.Type)
-	}
+        x, y := elliptic.Unmarshal(elliptic.P256(), bytes)
+        if x == nil {
+                return nil, fmt.Errorf("Failed to Unmarhsal public key. No other information is available")
+        }
 
-	pk, err := x509.ParsePKIXPublicKey(block.Bytes)
-	if err != nil {
-		return nil, err
-	}
+        pk := ecdsa.PublicKey{
+                elliptic.P256(),
+                x,
+                y,
+        }
 
-	var psaToken psatoken.Evidence
+        var psaToken psatoken.Evidence
 
-	if err = psaToken.FromCOSE(token.Data); err != nil {
-		return nil, err
-	}
+        if err = psaToken.FromCOSE(token.Data); err != nil {
+                return nil, err
+        }
 
-	if err = psaToken.Verify(pk); err != nil {
-		return nil, err
-	}
-	log.Println("\n Token Signature Verified")
+        if err = psaToken.Verify(&pk); err != nil {
+                return nil, err
+        }
 
-	var extracted scheme.ExtractedClaims
+        var extracted scheme.ExtractedClaims
 
-	claimsSet, err := claimsToMap(psaToken.Claims)
-	if err != nil {
-		return nil, err
-	}
-	extracted.ClaimsSet = claimsSet
+        claimsSet, err := claimsToMap(psaToken.Claims)
+        if err != nil {
+                return nil, err
+        }
+        extracted.ClaimsSet = claimsSet
 
-	extracted.SoftwareID = psaSoftwareLookupKey(
-		token.TenantId,
-		MustImplIDString(psaToken.Claims),
-	)
-	log.Printf("\n Extracted SW ID Key = %s", extracted.SoftwareID)
-	return &extracted, nil
+        extracted.SoftwareID = psaSoftwareLookupKey(
+                token.TenantId,
+                MustImplIDString(psaToken.Claims),
+        )
+
+        return &extracted, nil
 }
 
 func (s Scheme) AppraiseEvidence(

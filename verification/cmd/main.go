@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ListenAddr  = "localhost:8080"
+	ListenAddr  = "verifier:8080"
 	VerifierCfg = config.Store{
 		// placeholder, empty for now
 	}

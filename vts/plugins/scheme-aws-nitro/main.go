@@ -4,26 +4,20 @@
 package main
 
 import (
-	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"encoding/base64"
+	"crypto/x509"
+	//"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
-	"log"
 	"net/url"
-	"os"
 
 	"github.com/hashicorp/go-plugin"
-	"github.com/veraison/psatoken"
+	"github.com/veracruz-project/go-nitro-enclave-attestation-document"
 	"github.com/veraison/services/proto"
 	"github.com/veraison/services/scheme"
-	//"github.com/veraison/services/vts/plugins/common"
-	//structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 type Endorsements struct {
-	SwComponents []psatoken.SwComponent `json:"software-components"`
 }
 
 type Scheme struct{}
@@ -33,39 +27,16 @@ func (s Scheme) GetName() string {
 }
 
 func (s Scheme) GetFormat() proto.AttestationFormat {
-	log.Printf("scheme-aws-nitro.GetFormat called. Returning %v\n", proto.AttestationFormat_AWS_NITRO)
 	return proto.AttestationFormat_AWS_NITRO
 }
 
 func (s Scheme) SynthKeysFromSwComponent(tenantID string, swComp *proto.Endorsement) ([]string, error) {
-	//var (
-		//implID string
-//		fields map[string]*structpb.Value
-		//err    error
-	//)
-
-	// fields, err = common.GetFieldsFromParts(swComp.GetAttributes())
-	// if err != nil {
-	// 	return nil, fmt.Errorf("unable to synthesize software component abs-path: %w", err)
-	// }
 
 	var return_array []string // intentionally empty, because we have no SW components in our provisioning corim at this time
 	return return_array, nil
 }
 
-func (s Scheme) SynthKeysFromTrustAnchor(tenantID string, ta *proto.Endorsement) ([]string, error) {
-	// var (
-	// 	fields map[string]*structpb.Value
-	// 	err    error
-	// )
-
-	// fields, err = common.GetFieldsFromParts(ta.GetAttributes())
-	// if err != nil {
-	// 	return nil, fmt.Errorf("unable to synthesize trust anchor abs-path: %w", err)
-	// }
-
-	
-
+func (s Scheme) SynthKeysFromTrustAnchor(tenantID string, ta *proto.Endorsement) ([]string, error) {	
 	return []string{nitroTaLookupKey(tenantID)}, nil
 }
 
@@ -76,12 +47,6 @@ func (s Scheme) GetSupportedMediaTypes() []string {
 }
 
 func (s Scheme) GetTrustAnchorID(token *proto.AttestationToken) (string, error) {
-	var psaToken psatoken.Evidence
-
-	err := psaToken.FromCOSE(token.Data)
-	if err != nil {
-		return "", err
-	}
 
 	return nitroTaLookupKey(token.TenantId), nil
 }
@@ -92,49 +57,59 @@ func (s Scheme) ExtractVerifiedClaims(token *proto.AttestationToken, trustAnchor
 
 	err := json.Unmarshal([]byte(trustAnchor), &ta_unmarshalled)
 	if err != nil {
-		return nil, err
+		new_err := fmt.Errorf("ExtractVerifiedClaims call to json.Unmarshall failed:%v", err)
+		return nil, new_err
+	}
+	contents, ok := ta_unmarshalled["attributes"].(map[string]interface{})
+	if !ok {
+		new_err:= fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims cast of %v to map[string]interface{} failed", ta_unmarshalled["attributes"])
+		return nil, new_err
 	}
 
-	contents := ta_unmarshalled["attributes"].(map[string]interface{})
+	cert_pem, ok := contents["nitro.iak-pub"].(string)
+	if !ok {
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims cast of %v to string failed", contents["nitro.iak-pub"])
+		return nil, new_err
+	}
 
-	bytes, err := base64.StdEncoding.DecodeString(contents["psa.iak-pub"].(string))
+	// golang standard library pem.Decode function cannot handle PEM data without a header, so I have to add one to make it happy. 
+	// Yes, this is stupid
+	cert_pem = "-----BEGIN CERTIFICATE-----\n" + cert_pem + "\n-----END CERTIFICATE-----\n"
+	cert_pem_bytes := []byte(cert_pem)
+	cert_block, _ := pem.Decode(cert_pem_bytes)
+	if cert_block == nil {
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to pem.Decode failed, but I don't know why")
+		return nil, new_err
+	}
+
+	cert_der := cert_block.Bytes
+	cert, err := x509.ParseCertificate(cert_der)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to base64 decode string: %s err:%e", contents["psa.iak-pub"].(string), err)
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to x509.ParseCertificate failed:%v", err)
+		return nil, new_err
 	}
 
-	x, y := elliptic.Unmarshal(elliptic.P256(), bytes)
-	if x == nil {
-		return nil, fmt.Errorf("Failed to Unmarhsal public key. No other information is available")
-	}
+	// token_data, err := base64.StdEncoding.DecodeString(string(token.Data))
+	// if err != nil {
+	// 	new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to base64.StdEncoding.DecodeString failed:%v", err)
+	// 	return nil, new_err
+	// }
+	token_data := token.Data
 
-	pk := ecdsa.PublicKey{
-		elliptic.P256(),
-		x,
-		y,
-	}
-
-	var psaToken psatoken.Evidence
-
-	if err = psaToken.FromCOSE(token.Data); err != nil {
-		return nil, err
-	}
-
-	if err = psaToken.Verify(pk); err != nil {
-		return nil, err
+	document, err := nitro_eclave_attestation_document.AuthenticateDocument(token_data, *cert)
+	if err != nil {
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to AuthenticateDocument failed:%v", err)
+		return nil, new_err
 	}
 
 	var extracted scheme.ExtractedClaims
 
-	claimsSet, err := claimsToMap(psaToken.Claims)
+	claimsSet, err := claimsToMap(document)
 	if err != nil {
-		return nil, err
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to claimsToMap failed:%v", err)
+		return nil, new_err
 	}
 	extracted.ClaimsSet = claimsSet
-
-	// extracted.SoftwareID = psaSoftwareLookupKey(
-	// 	token.TenantId,
-	// 	MustImplIDString(psaToken.Claims),
-	// )
 
 	return &extracted, nil
 }
@@ -164,25 +139,16 @@ func (s Scheme) AppraiseEvidence(
 	return &appraisalCtx, err
 }
 
-func claimsToMap(claims psatoken.IClaims) (map[string]interface{}, error) {
-	data, err := claims.ToJSON()
-	if err != nil {
-		return nil, err
+func claimsToMap(doc *nitro_eclave_attestation_document.AttestationDocument) (out map[string]interface{}, err error) {
+	out = make(map[string]interface{})
+	for index, this_pcr := range doc.PCRs {
+		var key = fmt.Sprintf("PCR%v", index)
+		out[key] = this_pcr
 	}
+	out["user_data"] = doc.User_Data
+	out["nonce"] = doc.Nonce
 
-	var out map[string]interface{}
-	err = json.Unmarshal(data, &out)
-
-	return out, err
-}
-
-func mapToClaims(in map[string]interface{}) (psatoken.IClaims, error) {
-	data, err := json.Marshal(in)
-	if err != nil {
-		return nil, err
-	}
-
-	return psatoken.DecodeJSONClaims(data)
+	return out, nil
 }
 
 func populateAttestationResult(appraisalCtx *proto.AppraisalContext, endorsements []Endorsements) error {
@@ -193,21 +159,9 @@ func populateAttestationResult(appraisalCtx *proto.AppraisalContext, endorsement
 		CertificationStatus:  proto.AR_Status_UNKNOWN,
 	}
 
-	claims, err := mapToClaims(appraisalCtx.Evidence.Evidence.AsMap())
-	if err != nil {
-		return err
-	}
-
 	// once the signature on the token is verified, we can claim the HW is
 	// authentic
 	tv.HardwareAuthenticity = proto.AR_Status_SUCCESS
-
-	match := matchSoftware(claims, endorsements)
-	if match == nil {
-		tv.SoftwareIntegrity = proto.AR_Status_FAILURE
-	} else {
-		tv.SoftwareIntegrity = proto.AR_Status_SUCCESS
-	}
 
 	appraisalCtx.Result.TrustVector = &tv
 
@@ -223,59 +177,6 @@ func populateAttestationResult(appraisalCtx *proto.AppraisalContext, endorsement
 	return nil
 }
 
-func matchSoftware(evidence psatoken.IClaims, endorsements []Endorsements) *Endorsements {
-	evidenceComponents := make(map[string]psatoken.SwComponent)
-
-	swComps, err := evidence.GetSoftwareComponents()
-	if err != nil {
-		return nil
-	}
-
-	for _, c := range swComps {
-		key := base64.StdEncoding.EncodeToString(*c.MeasurementValue)
-		evidenceComponents[key] = c
-	}
-
-	for _, endorsement := range endorsements {
-		matched := true
-		for _, comp := range endorsement.SwComponents {
-			key := base64.StdEncoding.EncodeToString(*comp.MeasurementValue)
-			evComp, ok := evidenceComponents[key]
-			if !ok {
-				matched = false
-				break
-			}
-
-			typeMatched := *comp.MeasurementType == "" || *comp.MeasurementType == *evComp.MeasurementType
-			sigMatched := comp.SignerID == nil || bytes.Equal(*comp.SignerID, *evComp.SignerID)
-			versionMatched := *comp.Version == "" || *comp.Version == *evComp.Version
-
-			if !(typeMatched && sigMatched && versionMatched) {
-				matched = false
-				break
-			}
-		}
-
-		if matched {
-			return &endorsement
-		}
-	}
-
-	return nil
-}
-
-// func psaSoftwareLookupKey(tenantID, implID string) string {
-// 	absPath := []string{implID}
-
-// 	u := url.URL{
-// 		Scheme: proto.AttestationFormat_AWS_NITRO.String(),
-// 		Host:   tenantID,
-// 		Path:   strings.Join(absPath, "/"),
-// 	}
-
-// 	return u.String()
-// }
-
 func nitroTaLookupKey(tenantID string) string {
 
 	u := url.URL{
@@ -287,32 +188,7 @@ func nitroTaLookupKey(tenantID string) string {
 	return u.String()
 }
 
-func MustImplIDString(c psatoken.IClaims) string {
-	v, err := c.GetImplID()
-	if err != nil {
-		panic(err)
-	}
-
-	return base64.StdEncoding.EncodeToString(v)
-}
-
-func MustInstIDString(c psatoken.IClaims) string {
-	v, err := c.GetInstID()
-	if err != nil {
-		panic(err)
-	}
-
-	return base64.StdEncoding.EncodeToString(v)
-}
-
 func main() {
-	file, err := os.OpenFile("scheme_nitro.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.SetOutput(file)
-	log.Println("scheme-aws-nitro main started")
 	var handshakeConfig = plugin.HandshakeConfig{
 		ProtocolVersion:  1,
 		MagicCookieKey:   "VERAISON_PLUGIN",
@@ -325,7 +201,6 @@ func main() {
 		},
 	}
 
-	log.Println("scheme-aws-nitro main calling plugin.Serve")
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: handshakeConfig,
 		Plugins:         pluginMap,
