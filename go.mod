@@ -19,6 +19,7 @@ require (
 	github.com/setrofim/viper v0.0.0-20220929140858-add5a281c9db
 	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.8.0
+	github.com/veracruz-project/go-nitro-enclave-attestation-document v0.0.0-20220902142425-b49cd6e96cf5
 	github.com/veraison/corim v0.0.0-20220801100627-a48aacbd333c
 	github.com/veraison/dice v0.0.1
 	github.com/veraison/eat v0.0.0-20210331113810-3da8a4dd42ff
