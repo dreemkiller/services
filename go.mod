@@ -28,7 +28,8 @@ require (
 	github.com/spf13/viper v1.13.0
 	github.com/stretchr/testify v1.8.1
 	github.com/veraison/ccatoken v1.0.0
-	github.com/veraison/corim v0.0.0-20230123231101-0e8a4a38a25a
+	github.com/veracruz-project/go-nitro-enclave-attestation-document v0.0.0-20220902142425-b49cd6e96cf5
+	github.com/veraison/corim v0.0.0-20220801100627-a48aacbd333c
 	github.com/veraison/dice v0.0.1
 	github.com/veraison/ear v1.0.1
 	github.com/veraison/eat v0.0.0-20220117140849-ddaf59d69f53
