@@ -6,6 +6,8 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/gin-gonic/gin v1.8.1
+	github.com/golang/mock v1.6.0
+	github.com/golang/protobuf v1.5.2
 	github.com/google/go-tpm v0.3.3
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-plugin v1.4.4
@@ -14,6 +16,7 @@ require (
 	github.com/moogar0880/problems v0.1.1
 	github.com/open-policy-agent/opa v0.43.0
 	github.com/stretchr/testify v1.8.0
+	github.com/veracruz-project/go-nitro-enclave-attestation-document v0.0.0-20220902142425-b49cd6e96cf5
 	github.com/veraison/corim v0.0.0-20220801100627-a48aacbd333c
 	github.com/veraison/dice v0.0.1
 	github.com/veraison/eat v0.0.0-20210331113810-3da8a4dd42ff
@@ -37,7 +40,6 @@ require (
 	github.com/go-playground/validator/v10 v10.10.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/goccy/go-json v0.9.7 // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/hashicorp/go-hclog v0.14.1 // indirect
 	github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb // indirect
