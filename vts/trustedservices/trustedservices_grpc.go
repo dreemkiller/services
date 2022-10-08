@@ -227,10 +227,16 @@ func (o *GRPC) GetAttestation(ctx context.Context, token *proto.AttestationToken
 		return nil, err
 	}
 
-	endorsements, err := o.EnStore.Get(ec.SoftwareId)
-	if err != nil {
-		fmt.Println("trustedservices.GRPC.GetAttestation call to o.EnStore.Get failed:%v, but still continuing\n", err)
-		//return nil, err
+	var endorsements []string
+	if ec.SoftwareId != "" {
+		endorsements, err = o.EnStore.Get(ec.SoftwareId)
+		if err != nil {
+			fmt.Printf("trustedservices.GRPC.GetAttestation call to o.EnStore.Get failed:%v, but still continuing\n", err)
+			//return nil, err
+		}
+		if err != nil && !errors.Is(err, kvstore.ErrKeyNotFound) {
+			return nil, err
+		}
 	}
 
 	attestContext, err := scheme.AppraiseEvidence(ec, endorsements)
