@@ -161,7 +161,7 @@ func (s Scheme) ExtractClaims(
 		token.TenantId,
 		MustImplIDString(psaToken.Claims),
 	)
-	log.Printf("\n Extracted SW ID Key = %s", extractedSoftwareID)
+	log.Printf("\n Extracted SW ID Key = %s", extracted.SoftwareID)
 
 	return &extracted, nil
 }
