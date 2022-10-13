@@ -496,6 +496,7 @@ github.com/golang/mock v1.4.1/go.mod h1:UOMv5ysSaYNkG+OFQykRIcU/QvvxJf3p21QfJ2Bt
 github.com/golang/mock v1.4.3/go.mod h1:UOMv5ysSaYNkG+OFQykRIcU/QvvxJf3p21QfJ2Bt3cw=
 github.com/golang/mock v1.4.4/go.mod h1:l3mdAwkq5BuhzHwde/uurv3sEJeZMXNpwsxVWU71h+4=
 github.com/golang/mock v1.5.0/go.mod h1:CWnOUgYIOo4TcNZ0wHX3YZCqsaM1I1Jvs6v3mP3KVu8=
+github.com/golang/mock v1.6.0 h1:ErTB+efbowRARo13NNdxyJji2egdxLGQhRaY+DUumQc=
 github.com/golang/mock v1.6.0/go.mod h1:p6yTPP+5HYm5mzsMV8JkE6ZKdX+/wYM6Hr+LicevLPs=
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/golang/protobuf v1.3.1/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
@@ -1050,6 +1051,8 @@ github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtX
 github.com/urfave/cli v1.22.2/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/vektah/gqlparser/v2 v2.4.6 h1:Yjzp66g6oVq93Jihbi0qhGnf/6zIWjcm8H6gA27zstE=
 github.com/vektah/gqlparser/v2 v2.4.6/go.mod h1:flJWIR04IMQPGz+BXLrORkrARBxv/rtyIAFvd/MceW0=
+github.com/veracruz-project/go-nitro-enclave-attestation-document v0.0.0-20220902142425-b49cd6e96cf5 h1:TamshIh803Xw8wEYgIuqRQjbUfaMSHMDsMtBH4TOpzw=
+github.com/veracruz-project/go-nitro-enclave-attestation-document v0.0.0-20220902142425-b49cd6e96cf5/go.mod h1:EXpO454Q3yOKVoNc7ECuLRfP7cmTmuhPwtuFYbkxWBk=
 github.com/veraison/apiclient v0.0.2/go.mod h1:H8YDx1ixM24GYP/aLbhq+HJsej0lVUqFCRIL5Uu4B0o=
 github.com/veraison/corim v0.0.0-20220801100627-a48aacbd333c h1:+qOmTV5aI475VuNXDfy8Klg8m2ovSISmdZlS63w0J64=
 github.com/veraison/corim v0.0.0-20220801100627-a48aacbd333c/go.mod h1:FOUHHZ7fOyWKk4oKUjO5Zw5gnkjz0rtzcJDvUZZFRSg=
@@ -1716,6 +1719,7 @@ gopkg.in/yaml.v2 v2.3.0/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.4.0 h1:D8xgwECY7CYvx+Y2n4sBz93Jn9JRvxdiyyo8CTfuKaY=
 gopkg.in/yaml.v2 v2.4.0/go.mod h1:RDklbk79AGWmwhnvt/jBztapEOGDOx6ZbXqjP6csGnQ=
 gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
+gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
