@@ -12,7 +12,7 @@ import (
 	"net/url"
 
 	"github.com/hashicorp/go-plugin"
-	"github.com/veracruz-project/go-nitro-enclave-attestation-document"
+	nitro_eclave_attestation_document "github.com/veracruz-project/go-nitro-enclave-attestation-document"
 	"github.com/veraison/services/proto"
 	"github.com/veraison/services/scheme"
 )
@@ -36,7 +36,7 @@ func (s Scheme) SynthKeysFromSwComponent(tenantID string, swComp *proto.Endorsem
 	return return_array, nil
 }
 
-func (s Scheme) SynthKeysFromTrustAnchor(tenantID string, ta *proto.Endorsement) ([]string, error) {	
+func (s Scheme) SynthKeysFromTrustAnchor(tenantID string, ta *proto.Endorsement) ([]string, error) {
 	return []string{nitroTaLookupKey(tenantID)}, nil
 }
 
@@ -51,7 +51,7 @@ func (s Scheme) GetTrustAnchorID(token *proto.AttestationToken) (string, error) 
 	return nitroTaLookupKey(token.TenantId), nil
 }
 
-func (s Scheme) ExtractVerifiedClaims(token *proto.AttestationToken, trustAnchor string) (*scheme.ExtractedClaims, error) {
+func (s Scheme) ExtractClaims(token *proto.AttestationToken, trustAnchor string) (*scheme.ExtractedClaims, error) {
 
 	ta_unmarshalled := make(map[string]interface{})
 
@@ -62,7 +62,7 @@ func (s Scheme) ExtractVerifiedClaims(token *proto.AttestationToken, trustAnchor
 	}
 	contents, ok := ta_unmarshalled["attributes"].(map[string]interface{})
 	if !ok {
-		new_err:= fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims cast of %v to map[string]interface{} failed", ta_unmarshalled["attributes"])
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims cast of %v to map[string]interface{} failed", ta_unmarshalled["attributes"])
 		return nil, new_err
 	}
 
@@ -72,7 +72,7 @@ func (s Scheme) ExtractVerifiedClaims(token *proto.AttestationToken, trustAnchor
 		return nil, new_err
 	}
 
-	// golang standard library pem.Decode function cannot handle PEM data without a header, so I have to add one to make it happy. 
+	// golang standard library pem.Decode function cannot handle PEM data without a header, so I have to add one to make it happy.
 	// Yes, this is stupid
 	cert_pem = "-----BEGIN CERTIFICATE-----\n" + cert_pem + "\n-----END CERTIFICATE-----\n"
 	cert_pem_bytes := []byte(cert_pem)
@@ -139,6 +139,71 @@ func (s Scheme) AppraiseEvidence(
 	return &appraisalCtx, err
 }
 
+// ValidateEvidenceIntegrity verifies the structural integrity and validity of the
+// token. The exact checks performed are scheme-specific, but they
+// would typically involve, at the least, verifying the token's
+// signature using the provided trust anchor. If the validation fails,
+// an error detailing what went wrong is returned.
+// TODO(setrofim): no distinction is currently made between validation
+// failing due to an internal error, and it failing due to bad input
+// (i.e. signature not matching).
+func (s Scheme) ValidateEvidenceIntegrity(
+	token *proto.AttestationToken,
+	trustAnchor string,
+	endorsementsStrings []string,
+) error {
+
+	ta_unmarshalled := make(map[string]interface{})
+
+	err := json.Unmarshal([]byte(trustAnchor), &ta_unmarshalled)
+	if err != nil {
+		new_err := fmt.Errorf("ExtractVerifiedClaims call to json.Unmarshall failed:%v", err)
+		return new_err
+	}
+	contents, ok := ta_unmarshalled["attributes"].(map[string]interface{})
+	if !ok {
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims cast of %v to map[string]interface{} failed", ta_unmarshalled["attributes"])
+		return new_err
+	}
+
+	cert_pem, ok := contents["nitro.iak-pub"].(string)
+	if !ok {
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims cast of %v to string failed", contents["nitro.iak-pub"])
+		return new_err
+	}
+
+	// golang standard library pem.Decode function cannot handle PEM data without a header, so I have to add one to make it happy.
+	// Yes, this is stupid
+	cert_pem = "-----BEGIN CERTIFICATE-----\n" + cert_pem + "\n-----END CERTIFICATE-----\n"
+	cert_pem_bytes := []byte(cert_pem)
+	cert_block, _ := pem.Decode(cert_pem_bytes)
+	if cert_block == nil {
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to pem.Decode failed, but I don't know why")
+		return new_err
+	}
+
+	cert_der := cert_block.Bytes
+	cert, err := x509.ParseCertificate(cert_der)
+	if err != nil {
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to x509.ParseCertificate failed:%v", err)
+		return new_err
+	}
+
+	// token_data, err := base64.StdEncoding.DecodeString(string(token.Data))
+	// if err != nil {
+	// 	new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to base64.StdEncoding.DecodeString failed:%v", err)
+	// 	return nil, new_err
+	// }
+	token_data := token.Data
+
+	_, err = nitro_eclave_attestation_document.AuthenticateDocument(token_data, *cert)
+	if err != nil {
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to AuthenticateDocument failed:%v", err)
+		return new_err
+	}
+	return nil
+}
+
 func claimsToMap(doc *nitro_eclave_attestation_document.AttestationDocument) (out map[string]interface{}, err error) {
 	out = make(map[string]interface{})
 	for index, this_pcr := range doc.PCRs {
@@ -153,24 +218,27 @@ func claimsToMap(doc *nitro_eclave_attestation_document.AttestationDocument) (ou
 
 func populateAttestationResult(appraisalCtx *proto.AppraisalContext, endorsements []Endorsements) error {
 	tv := proto.TrustVector{
-		SoftwareUpToDateness: proto.AR_Status_UNKNOWN,
-		ConfigIntegrity:      proto.AR_Status_UNKNOWN,
-		RuntimeIntegrity:     proto.AR_Status_UNKNOWN,
-		CertificationStatus:  proto.AR_Status_UNKNOWN,
+		InstanceIdentity: int32(proto.ARStatus_NO_CLAIM),
+		Configuration:    int32(proto.ARStatus_NO_CLAIM),
+		Executables:      int32(proto.ARStatus_NO_CLAIM),
+		FileSystem:       int32(proto.ARStatus_NO_CLAIM),
+		Hardware:         int32(proto.ARStatus_NO_CLAIM),
+		RuntimeOpaque:    int32(proto.ARStatus_NO_CLAIM),
+		StorageOpaque:    int32(proto.ARStatus_NO_CLAIM),
+		SourcedData:      int32(proto.ARStatus_NO_CLAIM),
 	}
 
 	// once the signature on the token is verified, we can claim the HW is
 	// authentic
-	tv.HardwareAuthenticity = proto.AR_Status_SUCCESS
+	tv.Hardware = int32(proto.ARStatus_HW_AFFIRMING)
 
 	appraisalCtx.Result.TrustVector = &tv
 
-	if tv.SoftwareIntegrity != proto.AR_Status_FAILURE &&
-		tv.HardwareAuthenticity != proto.AR_Status_FAILURE {
-		appraisalCtx.Result.Status = proto.AR_Status_SUCCESS
-	} else {
-		appraisalCtx.Result.Status = proto.AR_Status_FAILURE
-	}
+	//if tv.SoftwareIntegrity != proto.AR_Status_FAILURE {
+	appraisalCtx.Result.Status = proto.TrustTier_AFFIRMING
+	// } else {
+	// 	appraisalCtx.Result.Status = proto.TrustTier_NONE
+	// }
 
 	appraisalCtx.Result.ProcessedEvidence = appraisalCtx.Evidence.Evidence
 
