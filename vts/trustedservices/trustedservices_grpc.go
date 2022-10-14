@@ -245,9 +245,12 @@ func (o *GRPC) GetAttestation(
 
 	ec.SoftwareId = extracted.SoftwareID
 
-	endorsements, err := o.EnStore.Get(ec.SoftwareId)
-	if err != nil && !errors.Is(err, kvstore.ErrKeyNotFound) {
-		return nil, err
+	var endorsements []string
+	if ec.SoftwareId != "" {
+		endorsements, err = o.EnStore.Get(ec.SoftwareId)
+		if err != nil && !errors.Is(err, kvstore.ErrKeyNotFound) {
+			return nil, err
+		}
 	}
 
 	if err = scheme.ValidateEvidenceIntegrity(token, ta, endorsements); err != nil {
