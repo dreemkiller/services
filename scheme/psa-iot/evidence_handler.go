@@ -4,11 +4,10 @@ package psa_iot
 
 import (
 	"bytes"
-	"crypto/x509"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
-	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -169,31 +168,29 @@ func (s EvidenceHandler) ValidateEvidenceIntegrity(
 	trustAnchor string,
 	endorsementsStrings []string,
 ) error {
-	var endorsement TaEndorsements
+	ta_unmarshalled := make(map[string]interface{})
 
-	if err := json.Unmarshal([]byte(trustAnchor), &endorsement); err != nil {
-		log.Println("Could not decode Endorsements in ExtractVerifiedClaims")
-		return fmt.Errorf("could not decode endorsement: %w", err)
-	}
-	ta := *endorsement.Attr.VerifKey
-	block, rest := pem.Decode([]byte(ta))
-
-	if block == nil {
-		log.Println("Could not get TA PEM Block ExtractVerifiedClaims")
-		return errors.New("could not extract trust anchor PEM block")
-	}
-
-	if len(rest) != 0 {
-		return errors.New("trailing data found after PEM block")
-	}
-
-	if block.Type != "PUBLIC KEY" {
-		return fmt.Errorf("unsupported key type %q", block.Type)
-	}
-
-	pk, err := x509.ParsePKIXPublicKey(block.Bytes)
+	err := json.Unmarshal([]byte(trustAnchor), &ta_unmarshalled)
 	if err != nil {
 		return err
+	}
+
+	contents := ta_unmarshalled["attributes"].(map[string]interface{})
+
+	bytes, err := base64.StdEncoding.DecodeString(contents["psa.iak-pub"].(string))
+	if err != nil {
+		return fmt.Errorf("Failed to base64 decode string: %s err:%e", contents["psa.iak-pub"].(string), err)
+	}
+
+	x, y := elliptic.Unmarshal(elliptic.P256(), bytes)
+	if x == nil {
+		return fmt.Errorf("Failed to Unmarhsal public key. No other information is available")
+	}
+
+	pk := ecdsa.PublicKey{
+		elliptic.P256(),
+		x,
+		y,
 	}
 
 	var psaToken psatoken.Evidence
@@ -202,10 +199,23 @@ func (s EvidenceHandler) ValidateEvidenceIntegrity(
 		return err
 	}
 
-	if err = psaToken.Verify(pk); err != nil {
+	if err = psaToken.Verify(&pk); err != nil {
 		return err
 	}
-	log.Println("\n Token Signature Verified")
+
+	var extracted scheme.ExtractedClaims
+
+	claimsSet, err := claimsToMap(psaToken.Claims)
+	if err != nil {
+		return err
+	}
+	extracted.ClaimsSet = claimsSet
+
+	extracted.SoftwareID = psaSoftwareLookupKey(
+		token.TenantId,
+		MustImplIDString(psaToken.Claims),
+	)
+
 	return nil
 }
 
