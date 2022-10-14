@@ -328,10 +328,12 @@ func (o *GRPC) GetAttestation(
 	o.logger.Debugw("constructed evidence context",
 		"software-id", appraisal.EvidenceContext.ReferenceId,
 		"trust-anchor-id", appraisal.EvidenceContext.TrustAnchorId)
-
-	endorsements, err := o.EnStore.Get(appraisal.EvidenceContext.ReferenceId)
-	if err != nil && !errors.Is(err, kvstore.ErrKeyNotFound) {
-		return nil, err
+	var endorsements []string
+	if ec.SoftwareId != "" {
+		endorsements, err = o.EnStore.Get(ec.SoftwareId)
+		if err != nil && !errors.Is(err, kvstore.ErrKeyNotFound) {
+			return nil, err
+		}
 	}
 
 	if len(endorsements) > 0 {
