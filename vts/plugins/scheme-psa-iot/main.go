@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/hashicorp/go-plugin"
@@ -368,6 +369,13 @@ func MustInstIDString(c psatoken.IClaims) string {
 }
 
 func main() {
+	f, err := os.OpenFile("scheme-psa-iot.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
+
+	log.SetOutput(f)
 	var handshakeConfig = plugin.HandshakeConfig{
 		ProtocolVersion:  1,
 		MagicCookieKey:   "VERAISON_PLUGIN",
