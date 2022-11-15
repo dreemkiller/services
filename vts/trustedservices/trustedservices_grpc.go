@@ -280,6 +280,7 @@ func (o *GRPC) GetAttestation(
 	ctx context.Context,
 	token *proto.AttestationToken,
 ) (*proto.AppraisalContext, error) {
+	fmt.Printf("vts.GetAttestation started")
 	o.logger.Infow("get attestation", "media-type", token.MediaType,
 		"tenant-id", token.TenantId, "format", token.Format)
 
