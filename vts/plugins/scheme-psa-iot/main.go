@@ -178,6 +178,7 @@ func (s Scheme) ValidateEvidenceIntegrity(
 		return fmt.Errorf("could not decode endorsement: %w", err)
 	}
 	ta := *endorsement.Attr.VerifKey
+	log.Println("ta:%v", ta)
 	block, rest := pem.Decode([]byte(ta))
 
 	if block == nil {
