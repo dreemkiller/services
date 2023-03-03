@@ -329,8 +329,8 @@ func (o *GRPC) GetAttestation(
 		"software-id", appraisal.EvidenceContext.ReferenceId,
 		"trust-anchor-id", appraisal.EvidenceContext.TrustAnchorId)
 	var endorsements []string
-	if ec.SoftwareId != "" {
-		endorsements, err = o.EnStore.Get(ec.SoftwareId)
+	if appraisal.EvidenceContext.ReferenceId != "" {
+		endorsements, err = o.EnStore.Get(appraisal.EvidenceContext.ReferenceId)
 		if err != nil && !errors.Is(err, kvstore.ErrKeyNotFound) {
 			return nil, err
 		}

@@ -1,58 +1,40 @@
-// Copyright 2021-2022 Contributors to the Veraison project.
+// Copyright 2021-2023 Contributors to the Veraison project.
 // SPDX-License-Identifier: Apache-2.0
+package aws_nitro
 
-package main
+type EvidenceHandler struct {}
 
-import (
-	"crypto/x509"
-	//"encoding/base64"
-	"encoding/json"
-	"encoding/pem"
-	"fmt"
-	"net/url"
-
-	"github.com/hashicorp/go-plugin"
-	nitro_eclave_attestation_document "github.com/veracruz-project/go-nitro-enclave-attestation-document"
-	"github.com/veraison/services/proto"
-	"github.com/veraison/services/scheme"
-)
-
-type Endorsements struct {
+func (o EvidenceHandler) GetName() string {
+	return "aws-nitro-evidence-handler"
 }
 
-type Scheme struct{}
-
-func (s Scheme) GetName() string {
-	return proto.AttestationFormat_AWS_NITRO.String()
+func (o EvidenceHandler) GetAttestationScheme() string {
+	return SchemeName
 }
 
-func (s Scheme) GetFormat() proto.AttestationFormat {
-	return proto.AttestationFormat_AWS_NITRO
+func (o EvidenceHandler) GetSupportedMediaTypes() []string {
+	return EvidenceMediaTypes
 }
 
-func (s Scheme) SynthKeysFromSwComponent(tenantID string, swComp *proto.Endorsement) ([]string, error) {
-
-	var return_array []string // intentionally empty, because we have no SW components in our provisioning corim at this time
-	return return_array, nil
+func (o EvidenceHandler) SynthKeysFromRefValue(
+	tenantID string,
+	refValue *proto.Endorsement
+) ([]string, error) {
+	return nil, fmt.Errorf("Not yet implemented")	
 }
 
-func (s Scheme) SynthKeysFromTrustAnchor(tenantID string, ta *proto.Endorsement) ([]string, error) {
-	return []string{nitroTaLookupKey(tenantID)}, nil
-}
-
-func (s Scheme) GetSupportedMediaTypes() []string {
-	return []string{
-		"application/aws-nitro-document",
-	}
-}
-
-func (s Scheme) GetTrustAnchorID(token *proto.AttestationToken) (string, error) {
-
+func (o EvidenceHandler) GetTrustAnchorID(token *proto.AttestationToken) (string, error) {
 	return nitroTaLookupKey(token.TenantId), nil
 }
 
-func (s Scheme) ExtractClaims(token *proto.AttestationToken, trustAnchor string) (*scheme.ExtractedClaims, error) {
+func (o EvidenceHandler) SynthKeysFromTrustAnchor(tenantID string, ta *proto.Endorsement) ([]string, error) {
+	return []string{nitroTaLookupKey(tenantID)}, nil
+}
 
+func (o EvidenceHandler) ExtractClaims(
+	token *proto.AttestationToken,
+	trustAnchor string,
+) (*ExtractedClaims, error) {
 	ta_unmarshalled := make(map[string]interface{})
 
 	err := json.Unmarshal([]byte(trustAnchor), &ta_unmarshalled)
@@ -89,11 +71,6 @@ func (s Scheme) ExtractClaims(token *proto.AttestationToken, trustAnchor string)
 		return nil, new_err
 	}
 
-	// token_data, err := base64.StdEncoding.DecodeString(string(token.Data))
-	// if err != nil {
-	// 	new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to base64.StdEncoding.DecodeString failed:%v", err)
-	// 	return nil, new_err
-	// }
 	token_data := token.Data
 
 	document, err := nitro_eclave_attestation_document.AuthenticateDocument(token_data, *cert)
@@ -114,9 +91,62 @@ func (s Scheme) ExtractClaims(token *proto.AttestationToken, trustAnchor string)
 	return &extracted, nil
 }
 
-func (s Scheme) AppraiseEvidence(
-	ec *proto.EvidenceContext, endorsementsStrings []string,
-) (*proto.AppraisalContext, error) {
+
+func (o EvidenceHandler) ValidateEvidenceIntegrity(
+	token *proto.AttestationToken,
+	trustAnchor string,
+	endorsementsStrings []string,
+) error {
+	ta_unmarshalled := make(map[string]interface{})
+
+	err := json.Unmarshal([]byte(trustAnchor), &ta_unmarshalled)
+	if err != nil {
+		new_err := fmt.Errorf("ExtractVerifiedClaims call to json.Unmarshall failed:%v", err)
+		return new_err
+	}
+	contents, ok := ta_unmarshalled["attributes"].(map[string]interface{})
+	if !ok {
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims cast of %v to map[string]interface{} failed", ta_unmarshalled["attributes"])
+		return new_err
+	}
+
+	cert_pem, ok := contents["nitro.iak-pub"].(string)
+	if !ok {
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims cast of %v to string failed", contents["nitro.iak-pub"])
+		return new_err
+	}
+
+	// golang standard library pem.Decode function cannot handle PEM data without a header, so I have to add one to make it happy.
+	// Yes, this is stupid
+	cert_pem = "-----BEGIN CERTIFICATE-----\n" + cert_pem + "\n-----END CERTIFICATE-----\n"
+	cert_pem_bytes := []byte(cert_pem)
+	cert_block, _ := pem.Decode(cert_pem_bytes)
+	if cert_block == nil {
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to pem.Decode failed, but I don't know why")
+		return new_err
+	}
+
+	cert_der := cert_block.Bytes
+	cert, err := x509.ParseCertificate(cert_der)
+	if err != nil {
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to x509.ParseCertificate failed:%v", err)
+		return new_err
+	}
+
+	token_data := token.Data
+
+	_, err = nitro_eclave_attestation_document.AuthenticateDocument(token_data, *cert)
+	if err != nil {
+		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to AuthenticateDocument failed:%v", err)
+		return new_err
+	}
+	return nil
+}
+
+func (o EvidenceHandler) AppraiseEvidence(
+	ec *proto.EvidenceContext,
+	endorsements []string,
+) (*ear.AttestationResult, error) {
 	appraisalCtx := proto.AppraisalContext{
 		Evidence: ec,
 		Result:   &proto.AttestationResult{},
@@ -139,69 +169,15 @@ func (s Scheme) AppraiseEvidence(
 	return &appraisalCtx, err
 }
 
-// ValidateEvidenceIntegrity verifies the structural integrity and validity of the
-// token. The exact checks performed are scheme-specific, but they
-// would typically involve, at the least, verifying the token's
-// signature using the provided trust anchor. If the validation fails,
-// an error detailing what went wrong is returned.
-// TODO(setrofim): no distinction is currently made between validation
-// failing due to an internal error, and it failing due to bad input
-// (i.e. signature not matching).
-func (s Scheme) ValidateEvidenceIntegrity(
-	token *proto.AttestationToken,
-	trustAnchor string,
-	endorsementsStrings []string,
-) error {
+func nitroTaLookupKey(tenantID string) string {
 
-	ta_unmarshalled := make(map[string]interface{})
-
-	err := json.Unmarshal([]byte(trustAnchor), &ta_unmarshalled)
-	if err != nil {
-		new_err := fmt.Errorf("ExtractVerifiedClaims call to json.Unmarshall failed:%v", err)
-		return new_err
-	}
-	contents, ok := ta_unmarshalled["attributes"].(map[string]interface{})
-	if !ok {
-		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims cast of %v to map[string]interface{} failed", ta_unmarshalled["attributes"])
-		return new_err
+	u := url.URL{
+		Scheme: SchemeName,
+		Host:   tenantID,
+		Path:   "/",
 	}
 
-	cert_pem, ok := contents["nitro.iak-pub"].(string)
-	if !ok {
-		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims cast of %v to string failed", contents["nitro.iak-pub"])
-		return new_err
-	}
-
-	// golang standard library pem.Decode function cannot handle PEM data without a header, so I have to add one to make it happy.
-	// Yes, this is stupid
-	cert_pem = "-----BEGIN CERTIFICATE-----\n" + cert_pem + "\n-----END CERTIFICATE-----\n"
-	cert_pem_bytes := []byte(cert_pem)
-	cert_block, _ := pem.Decode(cert_pem_bytes)
-	if cert_block == nil {
-		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to pem.Decode failed, but I don't know why")
-		return new_err
-	}
-
-	cert_der := cert_block.Bytes
-	cert, err := x509.ParseCertificate(cert_der)
-	if err != nil {
-		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to x509.ParseCertificate failed:%v", err)
-		return new_err
-	}
-
-	// token_data, err := base64.StdEncoding.DecodeString(string(token.Data))
-	// if err != nil {
-	// 	new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to base64.StdEncoding.DecodeString failed:%v", err)
-	// 	return nil, new_err
-	// }
-	token_data := token.Data
-
-	_, err = nitro_eclave_attestation_document.AuthenticateDocument(token_data, *cert)
-	if err != nil {
-		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to AuthenticateDocument failed:%v", err)
-		return new_err
-	}
-	return nil
+	return u.String()
 }
 
 func claimsToMap(doc *nitro_eclave_attestation_document.AttestationDocument) (out map[string]interface{}, err error) {
@@ -234,43 +210,9 @@ func populateAttestationResult(appraisalCtx *proto.AppraisalContext, endorsement
 
 	appraisalCtx.Result.TrustVector = &tv
 
-	//if tv.SoftwareIntegrity != proto.AR_Status_FAILURE {
 	appraisalCtx.Result.Status = proto.TrustTier_AFFIRMING
-	// } else {
-	// 	appraisalCtx.Result.Status = proto.TrustTier_NONE
-	// }
 
 	appraisalCtx.Result.ProcessedEvidence = appraisalCtx.Evidence.Evidence
 
 	return nil
-}
-
-func nitroTaLookupKey(tenantID string) string {
-
-	u := url.URL{
-		Scheme: proto.AttestationFormat_AWS_NITRO.String(),
-		Host:   tenantID,
-		Path:   "/",
-	}
-
-	return u.String()
-}
-
-func main() {
-	var handshakeConfig = plugin.HandshakeConfig{
-		ProtocolVersion:  1,
-		MagicCookieKey:   "VERAISON_PLUGIN",
-		MagicCookieValue: "VERAISON",
-	}
-
-	var pluginMap = map[string]plugin.Plugin{
-		"scheme": &scheme.Plugin{
-			Impl: &Scheme{},
-		},
-	}
-
-	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: handshakeConfig,
-		Plugins:         pluginMap,
-	})
 }
