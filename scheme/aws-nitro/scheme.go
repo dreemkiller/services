@@ -3,7 +3,7 @@
 package aws_nitro
 
 const (
-	SchemeName              = "AWS_NITRO"
+	SchemeName              = "aws-nitro"
 	CCAEndorsementMediaType = "application/corim-unsigned+cbor; profile=http://aws.com/nitro"
 )
 

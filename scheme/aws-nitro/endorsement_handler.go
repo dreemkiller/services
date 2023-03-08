@@ -13,11 +13,11 @@ func (o EndorsementHandler) Init(params handler.EndorsementHandlerParams) error 
 	return nil // no-op
 }
 
-funct (o EndorsementHandler) Close() error {
+func (o EndorsementHandler) Close() error {
 	return nil // no-op
 }
 
-func (o EndorsementHandler) GetName() error {
+func (o EndorsementHandler) GetName() string {
 	return "unsigned-corim (AWS Nitro profile)"
 }
 
@@ -29,6 +29,6 @@ func (o EndorsementHandler) GetSupportedMediaTypes() []string {
 	return EndorsementMediaTypes
 }
 
-func (o EndorsementHandler) Decode(data []byte) (*handler.EndorsemenetHandlerResponse, rror) {
+func (o EndorsementHandler) Decode(data []byte) (*handler.EndorsementHandlerResponse, error) {
 	return common.UnsignedCorimDecoder(data, &Extractor{})
 }
