@@ -93,7 +93,7 @@ func (o EvidenceHandler) ExtractClaims(
 
 	token_data := token.Data
 
-	document, err := nitro_enclave_attestation_document.AuthenticateDocument(token_data, *cert)
+	document, err := nitro_enclave_attestation_document.AuthenticateDocument(token_data, *cert, false)
 	if err != nil {
 		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractClaims call to AuthenticateDocument failed:%v", err)
 		return nil, new_err
@@ -155,7 +155,7 @@ func (o EvidenceHandler) ValidateEvidenceIntegrity(
 
 	token_data := token.Data
 
-	_, err = nitro_enclave_attestation_document.AuthenticateDocument(token_data, *cert)
+	_, err = nitro_enclave_attestation_document.AuthenticateDocument(token_data, *cert, false)
 	if err != nil {
 		new_err := fmt.Errorf("scheme-aws-nitro.Scheme.ExtractVerifiedClaims call to AuthenticateDocument failed:%v", err)
 		return new_err

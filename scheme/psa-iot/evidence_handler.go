@@ -120,7 +120,7 @@ func (s EvidenceHandler) SynthKeysFromTrustAnchor(tenantID string, ta *proto.End
 	}
 
 	finalstr := psaTaLookupKey(tenantID, implID, instID)
-	log.Printf("PSA Plugin TA PSA Look Up Key= %s\n", finalstr)
+	log.Printf("PSA Plugin PSA Look Up Key= %s\n", finalstr)
 	return []string{psaTaLookupKey(tenantID, implID, instID)}, nil
 }
 
