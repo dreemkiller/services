@@ -77,6 +77,8 @@ func (o EvidenceHandler) ExtractClaims(
 		return nil, new_err
 	}
 
+	cert_pem = "-----BEGIN CERTIFICATE-----\n" + cert_pem + "\n-----END CERTIFICATE-----\n"
+
 	cert_pem_bytes := []byte(cert_pem)
 	cert_block, _ := pem.Decode(cert_pem_bytes)
 	if cert_block == nil {
