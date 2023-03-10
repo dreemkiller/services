@@ -316,6 +316,10 @@ func matchSoftware(evidence psatoken.IClaims, endorsements []Endorsements) bool 
 		evidenceComponents[key] = c
 	}
 	matched := false
+	fmt.Printf("len(endorsements):%v\n", len(endorsements))
+	if len(endorsements) == 0 {
+		matched = true
+	}
 	for _, endorsement := range endorsements {
 		// If we have Endorsements we assume they match to begin with
 		matched = true
