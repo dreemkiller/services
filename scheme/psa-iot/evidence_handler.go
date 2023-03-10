@@ -177,6 +177,7 @@ func (s EvidenceHandler) ValidateEvidenceIntegrity(
 		return fmt.Errorf("could not decode endorsement: %w", err)
 	}
 	ta := *endorsement.Attr.VerifKey
+	fmt.Printf("Attempting to PEM decode:%v\n", ta)
 	block, rest := pem.Decode([]byte(ta))
 
 	if block == nil {
