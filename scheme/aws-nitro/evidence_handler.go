@@ -173,6 +173,8 @@ func (o EvidenceHandler) AppraiseEvidence(
 
 	result := handler.CreateAttestationResult(SchemeName)
 
+	fmt.Printf("AppraiseEvidence: len(endorsementsString):%v\n", len(endorsementsString))
+	fmt.Printf("AppraiseEvidence: endorsementsString:%v\n", endorsementsString)
 	for i, e := range endorsementsString {
 		var endorsement Endorsements
 

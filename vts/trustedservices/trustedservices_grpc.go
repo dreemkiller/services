@@ -313,15 +313,19 @@ func (o *GRPC) GetAttestation(
 		return nil, err
 	}
 
+	fmt.Printf("GRPC.GetAttestation trust anchor:%v\n", ta)
+
 	extracted, err := handler.ExtractClaims(token, ta)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("GRPC.GetAttestation extracted:%v\n", extracted)
 
 	appraisal.EvidenceContext.Evidence, err = structpb.NewStruct(extracted.ClaimsSet)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("GRPC.GetAttestation appraisal.EvidenceContext.Evidence:%v\n", appraisal.EvidenceContext.Evidence)
 
 	appraisal.EvidenceContext.ReferenceId = extracted.ReferenceID
 
@@ -329,6 +333,7 @@ func (o *GRPC) GetAttestation(
 		"software-id", appraisal.EvidenceContext.ReferenceId,
 		"trust-anchor-id", appraisal.EvidenceContext.TrustAnchorId)
 	var endorsements []string
+	fmt.Printf("GRPC.GetAttestation appraisal.EvidenceContext.ReferenceId:%v\n", appraisal.EvidenceContext.ReferenceId)
 	if appraisal.EvidenceContext.ReferenceId != "" {
 		endorsements, err = o.EnStore.Get(appraisal.EvidenceContext.ReferenceId)
 		if err != nil && !errors.Is(err, kvstore.ErrKeyNotFound) {
@@ -357,6 +362,7 @@ func (o *GRPC) GetAttestation(
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("GRPC.GetAttestation appraisedResult:%v\n", appraisedResult)
 	appraisal.Result = appraisedResult
 
 	// TODO(setrofim) Should we be doing appraisal.SetError() on error here?
@@ -382,6 +388,7 @@ func (o *GRPC) GetAttestation(
 
 	o.logger.Infow("evaluated attestation result", "attestation-result", appraisal.Result)
 
+	fmt.Printf("GRPC.GetAttestation returning appraisal.GetContext():%v\n", appraisal.GetContext())
 	return appraisal.GetContext(), err
 }
 
