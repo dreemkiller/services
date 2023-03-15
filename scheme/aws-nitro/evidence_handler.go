@@ -207,7 +207,7 @@ func claimsToMap(doc *nitro_enclave_attestation_document.AttestationDocument) (o
 		var key = fmt.Sprintf("PCR%v", index)
 		out[key] = this_pcr
 	}
-	out["user_data"] = doc.UserData
+	out["user_data"] = doc.User_Data
 	out["nonce"] = doc.Nonce
 
 	return out, nil
