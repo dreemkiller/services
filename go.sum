@@ -1071,6 +1071,8 @@ github.com/veracruz-project/go-nitro-enclave-attestation-document v0.0.0-2022090
 github.com/veracruz-project/go-nitro-enclave-attestation-document v0.0.0-20220902142425-b49cd6e96cf5/go.mod h1:EXpO454Q3yOKVoNc7ECuLRfP7cmTmuhPwtuFYbkxWBk=
 github.com/veracruz-project/go-nitro-enclave-attestation-document v0.0.0-20230308204408-e07b2b5e6cc4 h1:Tj0nGMZL7S+OJtIXjhk1htBd16rt+la8GiGY4JFxSRc=
 github.com/veracruz-project/go-nitro-enclave-attestation-document v0.0.0-20230308204408-e07b2b5e6cc4/go.mod h1:JRldyv/2U+D7c5yI1HP9iY/Aa7j3TnhwpUvC1ZwE+Lw=
+github.com/veracruz-project/go-nitro-enclave-attestation-document v0.0.0-20230315135749-6fc97d770084 h1:Uups6NuvHSh8UTqNM+iLP85JFmORaKAlCLpsJr4aUTo=
+github.com/veracruz-project/go-nitro-enclave-attestation-document v0.0.0-20230315135749-6fc97d770084/go.mod h1:JRldyv/2U+D7c5yI1HP9iY/Aa7j3TnhwpUvC1ZwE+Lw=
 github.com/veraison/apiclient v0.0.2/go.mod h1:H8YDx1ixM24GYP/aLbhq+HJsej0lVUqFCRIL5Uu4B0o=
 github.com/veraison/ccatoken v1.0.0 h1:8xMZdWKb9vzGy5VbxleVzhQ10ZvBRRWse1FN93mGzXo=
 github.com/veraison/ccatoken v1.0.0/go.mod h1:tHh48NBedUooX/DguS+cUC27yCgdv7bBtZ188jZ3fqo=
