@@ -1,0 +1,11 @@
+{
+    "scheme": "AMD-SEV-SNP",
+    "type":"REFERENCE_VALUE",
+    "subType": "AMD-SEV-SNP.platform-config",
+    "attributes":{
+        "AMD-SEV-SNP.hw-model":"Milan",
+        "AMD-SEV-SNP.impl-id":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "AMD-SEV-SNP.platform-config-label": "abcd",
+        "AMD-SEV-SNP.platform-config-id": "AQID"
+    }
+}

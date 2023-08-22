@@ -1,0 +1,15 @@
+{
+  "evidence": {
+    "version": "0x02000000",
+    "policy": "0x0000030000000000",
+    "platform-version": "0x0300000000000aa9",
+    "measurement":"0xa101bb6bd0ada6b64b2432d03a5c04a0ebffb59ef8a16992320d7bbbae13d839d379973e90e98afac35025f024e5627e",
+    "report-id": "0x58dd91789c3a98c7129580290ec33407ab657d7b8b9242ac02885237cb15d564",
+    "report-id-ma": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "reported-tcb": "0x0300000000000aa9",
+    "signature-algo": "0x01000000"
+  },
+  "reference-id": "AMD-SEV-SNP://Milan/BwYFBAMCAQAPDg0MCwoJCBcWFRQTEhEQHx4dHBsaGRg=/AQcGBQQDAgEADw4NDAsKCQgXFhUUExIREB8eHRwbGhkY",
+  "trust-anchor-id": "AMD-SEV-SNP://Milan/",
+  "tenant-id": "Milan"
+}

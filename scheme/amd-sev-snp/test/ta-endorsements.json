@@ -1,0 +1,11 @@
+
+{
+    "scheme":"AMD-SEV-SNP",
+    "type":"VERIFICATION_KEY",
+    "attributes":{
+        "AMD-SEV-SNP.hw-model":"Milan",
+        "AMD-SEV-SNP.impl-id":"76543210fedcba9817161514131211101f1e1d1c1b1a1918",
+        "AMD-SEV-SNP.iak-pub":"-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAETl4iCZ47zrRbRG0TVf0dw7VFlHtv\n18HInYhnmMNybo+A1wuECyVqrDSmLt4QQzZPBECV8ANHS5HgGCCSr7E/Lg==\n-----END PUBLIC KEY-----",
+        "AMD-SEV-SNP.chip-id":"6nhTmGBJaPRyXtuplDJIwiWj9vN1fxvQFiw0kOxPEhuGFp0Bmu0jRho7TkYorQn8LkvNsdHxKZWaCJ6JhFafbg=="
+    }
+}
