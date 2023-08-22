@@ -3,7 +3,6 @@
 package amd_sev_snp
 
 import (
-	"fmt"
 	"github.com/veraison/services/handler"
 	"github.com/veraison/services/scheme/common"
 )
